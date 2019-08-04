@@ -1,7 +1,9 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jenkins-master
+  name: jenkins-deployment
+  labels:
+    app: jenkins-master
 spec:
   replicas: 1
   selector:
@@ -23,47 +25,45 @@ spec:
         runAsUser: 0
       serviceAccountName: jenkins
       containers:
-       - name: jenkins-leader
-         image: phanikumary1995/jenkins-oracle-jdk8
-         #image: jenkins/jenkins:lts
-         volumeMounts:
-          - name: persistent-storage
-            mountPath: /var/jenkins_home
-          - name: docker-sock-volume
-            mountPath: /var/run/docker.sock
-         resources:
-           requests:
-             memory: "2048Mi"
-             cpu: "0.5"
-           limits:
-             memory: "2048Mi"
-             cpu: "1.0"
-         ports:
-           - name: http-port
-             containerPort: 8080
-           - name: jnlp-port
-             containerPort: 50000
-         readinessProbe:
-             tcpSocket:
-               port: 80
-             initialDelaySeconds: 30
-             timeoutSeconds: 1
-             periodSeconds: 5
-             successThreshold: 1
-         livenessProbe:
-             tcpSocket:
-               port: 80
-             initialDelaySeconds: 30
-             timeoutSeconds: 1
-             periodSeconds: 2
-             failureThreshold: 3
+      - name: jenkins-master
+        image: phanikumary1995/jenkins-oracle-jdk8
+        ports:
+        - name: http-port
+          containerPort: 8080
+        - name: jnlp-port
+          containerPort: 50000
+        volumeMounts:
+        - name: persistent-storage
+          mountPath: /var/jenkins_home
+        - name: docker-sock-volume
+          mountPath: /var/run/docker.sock
+        resources:
+          requests:
+            memory: "2048Mi"
+            cpu: "0.5"
+          limits:
+            memory: "2048Mi"
+            cpu: "1.0"
+        readinessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 30
+          timeoutSeconds: 1
+          periodSeconds: 5
+          successThreshold: 1
+        livenessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 30
+          timeoutSeconds: 1
+          periodSeconds: 2
+          failureThreshold: 3
       volumes:
-       - name: docker-sock-volume
-         hostPath:
-           path: /var/run/docker.sock
-       - name: persistent-storage
-         persistentVolumeClaim:
-           claimName: jenkins-pv-claim
-
-    #  nodeSelector:
-     #   server: node2
+      - name: docker-sock-volume
+        hostPath:
+          path: /var/run/docker.sock
+      - name: persistent-storage
+        persistentVolumeClaim:
+          claimName: jenkins-pv-claim
+#      nodeSelector:
+#        server: node1
